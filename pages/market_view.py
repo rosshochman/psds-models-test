@@ -16,7 +16,7 @@ def get_massive_key() -> str | None:
         return None
 
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=5)
 def fetch_intraday_bars(symbol: str, api_key: str, date_str: str) -> list[dict]:
     response = requests.get(
         f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/minute/{date_str}/{date_str}",
@@ -25,7 +25,16 @@ def fetch_intraday_bars(symbol: str, api_key: str, date_str: str) -> list[dict]:
     )
     response.raise_for_status()
     results = response.json().get("results", [])
-    return [{"time": int(row["t"] / 1000), "value": row["c"]} for row in results]
+    return [
+        {
+            "time": int(row["t"] / 1000),
+            "open": row["o"],
+            "high": row["h"],
+            "low": row["l"],
+            "close": row["c"],
+        }
+        for row in results
+    ]
 
 
 def render_lightweight_chart(symbol: str, title: str) -> None:
@@ -56,7 +65,7 @@ def render_lightweight_chart(symbol: str, title: str) -> None:
         st.warning(f"No 1-minute data available yet for {symbol} on {est_date} (EST).")
         st.stop()
 
-    st.caption(f"Source: Polygon/Massive • Cached for 30 seconds • Date: {est_date} EST")
+    st.caption(f"Source: Polygon/Massive • Cached for 5 seconds • Date: {est_date} EST")
 
     chart_html = f"""
     <div id='chart' style='height:460px;'></div>
@@ -71,12 +80,15 @@ def render_lightweight_chart(symbol: str, title: str) -> None:
         timeScale: {{ borderColor: '#485c7b', timeVisible: true, secondsVisible: false }}
       }});
 
-      const lineSeries = chart.addSeries(LightweightCharts.LineSeries, {{
-        color: '#4cafef',
-        lineWidth: 2,
+      const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {{
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350'
       }});
 
-      lineSeries.setData({data});
+      candleSeries.setData({data});
       chart.timeScale().fitContent();
     </script>
     """
