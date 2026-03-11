@@ -1,4 +1,3 @@
-import os
 from time import sleep
 from urllib.parse import urlencode
 
@@ -9,28 +8,26 @@ from navigation import make_sidebar
 
 st.set_page_config(layout="wide", page_title="BT Access Portal")
 
+
+def get_secret(key: str, fallback_key: str | None = None, default: str | None = None) -> str | None:
+    if key in st.secrets:
+        return st.secrets[key]
+    if fallback_key and fallback_key in st.secrets:
+        return st.secrets[fallback_key]
+    return default
+
+
 # Discord OAuth2 credentials
-def get_config_value(key: str, default: str | None = None) -> str | None:
-    env_value = os.getenv(key)
-    if env_value:
-        return env_value
-
-    try:
-        return st.secrets.get(key, default)
-    except Exception:
-        return default
-
-
-CLIENT_ID = get_config_value("client_id")
-CLIENT_SECRET = get_config_value("client_secret")
-REDIRECT_URI = get_config_value("redirect_uri")
+CLIENT_ID = get_secret("CLIENT_ID", "client_id")
+CLIENT_SECRET = get_secret("CLIENT_SECRET", "client_secret")
+REDIRECT_URI = get_secret("REDIRECT_URI", "redirect_uri")
 
 # Optional logging webhook
-LOGGING_WEBHOOK = get_config_value("psds_elite_logging_webhook")
+LOGGING_WEBHOOK = get_secret("PSDS_ELITE_LOGGING_WEBHOOK", "psds_elite_logging_webhook")
 
 # Discord guild and role requirements
-GUILD_ID = get_config_value("guild_id")
-BT_ROLE_ID = get_config_value("bt_role_id", "1011304196999487532")
+GUILD_ID = get_secret("GUILD_ID", "guild_id")
+BT_ROLE_ID = get_secret("BT_ROLE_ID", "bt_role_id", "1011304196999487532")
 
 
 def generate_discord_login_url() -> str:
@@ -96,16 +93,16 @@ def validate_required_config() -> bool:
     missing = [
         key
         for key, value in {
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "redirect_uri": REDIRECT_URI,
-            "guild_id": GUILD_ID,
+            "CLIENT_ID": CLIENT_ID,
+            "CLIENT_SECRET": CLIENT_SECRET,
+            "REDIRECT_URI": REDIRECT_URI,
+            "GUILD_ID": GUILD_ID,
         }.items()
         if not value
     ]
 
     if missing:
-        st.error(f"Missing required environment variables: {', '.join(missing)}")
+        st.error(f"Missing required Streamlit secrets: {', '.join(missing)}")
         return False
     return True
 
