@@ -86,8 +86,10 @@ def _vwap(data: list[dict]) -> list[dict]:
 
 
 def _toggle_button(label: str, key: str) -> None:
-    if st.button(label, key=key, use_container_width=True):
-        st.session_state[key] = not st.session_state.get(key, False)
+    toggle_state = st.session_state.get(key, False)
+    button_label = f"{label} {'✅' if toggle_state else ''}".strip()
+    if st.button(button_label, key=f"{key}_button", use_container_width=True):
+        st.session_state[key] = not toggle_state
 
 
 def _render_chart(symbol: str, est_date: str) -> None:
@@ -158,7 +160,18 @@ def _render_chart(symbol: str, est_date: str) -> None:
         width: 1200,
         height: 460,
         rightPriceScale: {{ borderColor: '#485c7b' }},
-        timeScale: {{ borderColor: '#485c7b', timeVisible: true, secondsVisible: false }}
+        timeScale: {{ borderColor: '#485c7b', timeVisible: true, secondsVisible: false }},
+        localization: {{
+          locale: 'en-US',
+          timeFormatter: (time) => new Intl.DateTimeFormat('en-US', {{
+            timeZone: 'America/New_York',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }}).format(new Date(time * 1000)),
+        }}
       }});
 
       const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {{
