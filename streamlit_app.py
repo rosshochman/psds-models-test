@@ -10,16 +10,27 @@ from navigation import make_sidebar
 st.set_page_config(layout="wide", page_title="BT Access Portal")
 
 # Discord OAuth2 credentials
-CLIENT_ID = os.getenv("client_id")
-CLIENT_SECRET = os.getenv("client_secret")
-REDIRECT_URI = os.getenv("redirect_uri")
+def get_config_value(key: str, default: str | None = None) -> str | None:
+    env_value = os.getenv(key)
+    if env_value:
+        return env_value
+
+    try:
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
+CLIENT_ID = get_config_value("client_id")
+CLIENT_SECRET = get_config_value("client_secret")
+REDIRECT_URI = get_config_value("redirect_uri")
 
 # Optional logging webhook
-LOGGING_WEBHOOK = os.getenv("psds_elite_logging_webhook")
+LOGGING_WEBHOOK = get_config_value("psds_elite_logging_webhook")
 
 # Discord guild and role requirements
-GUILD_ID = os.getenv("guild_id")
-BT_ROLE_ID = os.getenv("bt_role_id", "1011304196999487532")
+GUILD_ID = get_config_value("guild_id")
+BT_ROLE_ID = get_config_value("bt_role_id", "1011304196999487532")
 
 
 def generate_discord_login_url() -> str:
