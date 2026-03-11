@@ -27,3 +27,4 @@ A minimal Streamlit app that allows access only to Discord users who:
 ## Notes
 - OAuth scope used: `identify guilds guilds.members.read`
 - The sidebar and protected page require `st.session_state['logged_in'] = True`.
+- Built-in Streamlit page navigation is hidden via `.streamlit/config.toml`; use the custom sidebar links rendered by `navigation.py`.
