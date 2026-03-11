@@ -6,6 +6,7 @@ make_sidebar()
 
 if not st.session_state.get("logged_in", False):
     st.error("Unauthorized. Please log in from the main page.")
+    st.page_link("streamlit_app.py", label="Go to Home")
     st.stop()
 
 st.title("Protected Dashboard")

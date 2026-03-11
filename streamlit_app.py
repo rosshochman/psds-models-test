@@ -3,17 +3,21 @@ from urllib.parse import urlencode
 
 import requests
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 from navigation import make_sidebar
 
-st.set_page_config(layout="wide", page_title="BT Access Portal")
+st.set_page_config(layout="wide", page_title="PSDS ML Models")
 
 
 def get_secret(key: str, fallback_key: str | None = None, default: str | None = None) -> str | None:
-    if key in st.secrets:
-        return st.secrets[key]
-    if fallback_key and fallback_key in st.secrets:
-        return st.secrets[fallback_key]
+    try:
+        if key in st.secrets:
+            return st.secrets[key]
+        if fallback_key and fallback_key in st.secrets:
+            return st.secrets[fallback_key]
+    except StreamlitSecretNotFoundError:
+        return default
     return default
 
 
@@ -107,7 +111,6 @@ def validate_required_config() -> bool:
     return True
 
 
-# OAuth callback code capture
 query_params = st.query_params
 if "code" in query_params and "access_token" not in st.session_state:
     token_data = exchange_code_for_token(query_params["code"])
@@ -153,8 +156,7 @@ if "access_token" in st.session_state and "logged_in" not in st.session_state:
 
 make_sidebar()
 
-
-st.title("BT Member Access")
+st.title("PSDS ML Models Access")
 st.write("This app is restricted to users in the configured Discord guild with the BT role.")
 
 if not validate_required_config():
