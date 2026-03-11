@@ -10,12 +10,16 @@ A minimal Streamlit app that allows access only to Discord users who:
    ```bash
    pip install -r requirements.txt
    ```
-2. Copy env vars:
-   ```bash
-   cp .env.example .env
+2. Create `.streamlit/secrets.toml` with your Discord configuration:
+   ```toml
+   CLIENT_ID = "..."
+   CLIENT_SECRET = "..."
+   REDIRECT_URI = "http://localhost:8501"
+   GUILD_ID = "..."
+   BT_ROLE_ID = "1011304196999487532" # optional override
+   PSDS_ELITE_LOGGING_WEBHOOK = "..."   # optional
    ```
-3. Export the variables from `.env` (or your secret manager).
-4. Run:
+3. Run:
    ```bash
    streamlit run streamlit_app.py
    ```
