@@ -24,17 +24,32 @@ def get_massive_key() -> str | None:
         return None
 
 
+@st.cache_data(ttl=30)
+def fetch_intraday_bars(symbol: str, api_key: str, date_str: str) -> list[dict]:
 @st.cache_data(ttl=5)
 def fetch_intraday_bars(
     symbol: str, api_key: str, date_str: str, multiplier: int, timespan: str
 ) -> list[dict]:
     response = requests.get(
+        f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/minute/{date_str}/{date_str}",
         f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/{multiplier}/{timespan}/{date_str}/{date_str}",
         params={"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": api_key},
         timeout=20,
     )
     response.raise_for_status()
     results = response.json().get("results", [])
+    return [{"time": int(row["t"] / 1000), "value": row["c"]} for row in results]
+
+
+def render_lightweight_chart(symbol: str, title: str) -> None:
+    make_sidebar()
+
+    if not st.session_state.get("logged_in", False):
+        st.error("Unauthorized. Please log in from the main page.")
+        st.page_link("streamlit_app.py", label="Go to Home")
+        st.stop()
+
+    st.title(title)
 
     bars: list[dict] = []
     for row in results:
@@ -94,12 +109,16 @@ def _render_chart(symbol: str, est_date: str) -> None:
     api_key = get_massive_key()
     if not api_key:
         st.error("Missing MASSIVE_KEY in Streamlit secrets.")
+        st.stop()
         return
 
+    est_now = datetime.now(ZoneInfo("America/New_York"))
+    est_date = est_now.strftime("%Y-%m-%d")
     timeframe_label = st.session_state.get(f"{symbol}_timeframe", "1 Min")
     multiplier, timespan = TIMEFRAME_OPTIONS[timeframe_label]
 
     try:
+        data = fetch_intraday_bars(symbol=symbol, api_key=api_key, date_str=est_date)
         data = fetch_intraday_bars(
             symbol=symbol,
             api_key=api_key,
@@ -109,9 +128,14 @@ def _render_chart(symbol: str, est_date: str) -> None:
         )
     except requests.HTTPError as exc:
         st.error(f"Failed to fetch {symbol} data from Polygon/Massive: {exc}")
+        st.stop()
         return
 
     if not data:
+        st.warning(f"No 1-minute data available yet for {symbol} on {est_date} (EST).")
+        st.stop()
+
+    st.caption(f"Source: Polygon/Massive • Cached for 30 seconds • Date: {est_date} EST")
         st.warning(f"No {timeframe_label} data available yet for {symbol} on {est_date} (EST).")
         return
 
@@ -159,6 +183,9 @@ def _render_chart(symbol: str, est_date: str) -> None:
         timeScale: {{ borderColor: '#485c7b', timeVisible: true, secondsVisible: false }}
       }});
 
+      const lineSeries = chart.addSeries(LightweightCharts.LineSeries, {{
+        color: '#4cafef',
+        lineWidth: 2,
       const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {{
         borderVisible: false,
       }});
@@ -177,6 +204,7 @@ def _render_chart(symbol: str, est_date: str) -> None:
         series.setData(points);
       }});
 
+      lineSeries.setData({data});
       const vwapData = {vwap_payload};
       if (vwapData.length) {{
         const vwapSeries = chart.addSeries(LightweightCharts.LineSeries, {{
